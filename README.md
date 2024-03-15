@@ -1,9 +1,9 @@
 # biscord
 
-A new Flutter project.
+A new Flutter project. This is a project of the IT group os Utch BIS. We are creating a "Discord" application to prove the use of real time connection and comunication, socket-io
 
-todos necesitamos tener la misma version del sdk, 3.19.3 en la terminal usar:
-flutter --version, si necesitan actualizar usar:
+this project needs the recent version of the sdk, 3.19.3, for it check using:
+flutter --version, if you need to upgrade your flutter use:
 flutter upgrade
 
-y para descargar las dependencias usar: flutter pub get
+to install the dependencies use: flutter pub get
