@@ -8,74 +8,100 @@ class LoginPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Obtener el tamaño mínimo permitido para el contenedor, investigar como definir dimensiones para movil sepradas de web
+    final double minContainerWidth = MediaQuery.of(context).size.width * 0.5;
+    final double minContainerHeight = MediaQuery.of(context).size.height * 0.4;
     return Scaffold(
       backgroundColor: Color(0xFF2C2F33),
-      body: Padding(
-        padding: EdgeInsets.all(20),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            TextField(
-              controller: emailController,
-              style: TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: 'Email',
-                hintStyle: TextStyle(color: Colors.white),
-                fillColor: Color(0xFF40444B),
-                filled: true,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide.none,
+      body: Center(
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.5, // Utiliza el 0% del ancho disponible,
+          height: MediaQuery.of(context).size.height * 0.6, 
+          padding: const EdgeInsets.all(20),
+          constraints: BoxConstraints(minWidth: minContainerWidth, minHeight: minContainerHeight,), // Establecer el ancho mínimo del contenedor
+          decoration: BoxDecoration(
+            color: Color(0xFF40444B), 
+            borderRadius: BorderRadius.circular(10), 
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.5), // Color y opacidad de la sombra
+                spreadRadius: 2, // El radio de extensión de la sombra
+                blurRadius: 5, // El radio de desenfoque de la sombra
+                offset: Offset(0, 3), // La distancia de desplazamiento de la sombra
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 600, 
+                child: TextField(
+                  controller: emailController,
+                  style: TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: 'Email',
+                    hintStyle: TextStyle(color: Colors.white),
+                    fillColor: Color(0xFF40444B),
+                    filled: true,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
                 ),
               ),
-            ),
-            SizedBox(height: 20),
-            TextField(
-              controller: passwordController,
-              style: TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: 'Password',
-                hintStyle: TextStyle(color: Colors.white),
-                fillColor: Color(0xFF40444B),
-                filled: true,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide.none,
+              const SizedBox(height: 30),
+              Container(
+                width: 600,
+                child: TextField(
+                  controller: passwordController,
+                  style: TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: 'Password',
+                    hintStyle: TextStyle(color: Colors.white),
+                    fillColor: Color(0xFF40444B),
+                    filled: true,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                  obscureText: true,
                 ),
               ),
-              obscureText: true,
-            ),
-            SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
+              const SizedBox(height: 30),
+              SizedBox(
+                width: 250, 
+                child: ElevatedButton(
+                  onPressed: () {
+                    // Supongamos que la autenticación es exitosa
+                    // Navega a la página principal, general
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => GeneralPage()),
+                      result: false, // Esto indica que esta ruta no es un resultado
+                    );
+                  },
+                  child: const Text('Login'),
+                ),
+              ),
+              const SizedBox(height: 20),
+              TextButton(
                 onPressed: () {
-                  // Supongamos que la autenticación es exitosa
-                  // Navega a la página principal (GeneralPage)
-                  Navigator.pushReplacement(
+                  // Navega a la página de registro
+                  Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => GeneralPage()),
-                    result: false, // Esto indica que esta ruta no es un resultado
+                    MaterialPageRoute(builder: (context) => RegisterPage()),
                   );
                 },
-                child: Text('Login'),
+                child: Text(
+                  'Register',
+                  style: TextStyle(color: Colors.blue.shade600,),
+                ),
               ),
-            ),
-            SizedBox(height: 10),
-            TextButton(
-              onPressed: () {
-                // Navega a la página de registro
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => RegisterPage()),
-                );
-              },
-              child: Text(
-                'Register',
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
