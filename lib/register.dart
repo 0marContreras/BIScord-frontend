@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 
 class RegisterPage extends StatelessWidget {
   final TextEditingController emailController = TextEditingController();
-  final TextEditingController confirmEmailController = TextEditingController();
+  
   final TextEditingController passwordController = TextEditingController();
-  final TextEditingController confirmPasswordController = TextEditingController();
+  
   final TextEditingController userController = TextEditingController();
 
   @override
@@ -16,8 +16,8 @@ class RegisterPage extends StatelessWidget {
       ),
       body: Center(
         child:Container(
-          width: MediaQuery.of(context).size.width* 0.5,
-          height: MediaQuery.of(context).size.height * 0.8,
+          width: MediaQuery.of(context).size.width* 0.8,
+          height: MediaQuery.of(context).size.height * 0.7,
         padding: EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: Color(0xFF40444B),
@@ -39,7 +39,7 @@ class RegisterPage extends StatelessWidget {
               style: TextStyle(color: Colors.white),
               decoration: InputDecoration(
                 hintText: 'User Name',
-                hintStyle: TextStyle(color: Colors.white),
+                hintStyle: TextStyle(color: Colors.white60),
                 fillColor: Color(0xFF40444B),
                 filled: true,
                 border: OutlineInputBorder(
@@ -48,13 +48,13 @@ class RegisterPage extends StatelessWidget {
                 ),
               ),
             ),
-            SizedBox(height: 20,),
+            SizedBox(height: 30,),
             TextField(
               controller: emailController,
               style: TextStyle(color: Colors.white),
               decoration: InputDecoration(
                 hintText: 'Email',
-                hintStyle: TextStyle(color: Colors.white),
+                hintStyle: TextStyle(color: Colors.white60),
                 fillColor: Color(0xFF40444B),
                 filled: true,
                 border: OutlineInputBorder(
@@ -63,28 +63,14 @@ class RegisterPage extends StatelessWidget {
                 ),
               ),
             ),
-            SizedBox(height: 20),
-            TextField(
-              controller: confirmEmailController,
-              style: TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: 'Confirm Email',
-                hintStyle: TextStyle(color: Colors.white),
-                fillColor: Color(0xFF40444B),
-                filled: true,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-            ),
-            SizedBox(height: 20),
+            SizedBox(height: 30),
+            
             TextField(
               controller: passwordController,
               style: TextStyle(color: Colors.white),
               decoration: InputDecoration(
                 hintText: 'Password',
-                hintStyle: TextStyle(color: Colors.white),
+                hintStyle: TextStyle(color: Colors.white60),
                 fillColor: Color(0xFF40444B),
                 filled: true,
                 border: OutlineInputBorder(
@@ -94,37 +80,26 @@ class RegisterPage extends StatelessWidget {
               ),
               obscureText: true,
             ),
-            SizedBox(height: 20),
-            TextField(
-              controller: confirmPasswordController,
-              style: TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: 'Confirm Password',
-                hintStyle: TextStyle(color: Colors.white),
-                fillColor: Color(0xFF40444B),
-                filled: true,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-              obscureText: true,
-            ),
-            SizedBox(height: 20),
+            SizedBox(height: 30),
+            
+            
             SizedBox(
-              width: double.infinity,
+              width: MediaQuery.of(context).size.width* 0.4,
               child: ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
                 onPressed: () {
                   String user = userController.text;
                   String email = emailController.text;
-                  String confirmEmail = confirmEmailController.text;
+                  
                   String password = passwordController.text;
-                  String confirmPassword = confirmPasswordController.text;
+                  
                   
                   // Implementa la lógica de registro aquí
-                  print('User: $user, Email: $email, Confirm Email: $confirmEmail, Password: $password, Confirm Password: $confirmPassword');
+                  print('User: $user, Email: $email, Password: $password,');
                 },
-                child: Text('Register'),
+                child: Text(
+                  'Register',
+                  style: TextStyle(color:  Colors.white,) ),
               ),
             ),
           ],

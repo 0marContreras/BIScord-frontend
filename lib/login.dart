@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'general.dart'; // Importa la página principal
 import 'register.dart'; // Importa la página de registro
 
+
 class LoginPage extends StatelessWidget {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
@@ -10,13 +11,13 @@ class LoginPage extends StatelessWidget {
   Widget build(BuildContext context) {
     // Obtener el tamaño mínimo permitido para el contenedor, investigar como definir dimensiones para movil sepradas de web
     final double minContainerWidth = MediaQuery.of(context).size.width * 0.5;
-    final double minContainerHeight = MediaQuery.of(context).size.height * 0.4;
+    final double minContainerHeight = MediaQuery.of(context).size.height * 0.6;
     return Scaffold(
       backgroundColor: Color(0xFF2C2F33),
       body: Center(
         child: Container(
-          width: MediaQuery.of(context).size.width * 0.5, // Utiliza el 0% del ancho disponible,
-          height: MediaQuery.of(context).size.height * 0.6, 
+          width: MediaQuery.of(context).size.width * 0.8, // Utiliza el 70% del ancho disponible,
+          height: MediaQuery.of(context).size.height * 0.7, 
           padding: const EdgeInsets.all(20),
           constraints: BoxConstraints(minWidth: minContainerWidth, minHeight: minContainerHeight,), // Establecer el ancho mínimo del contenedor
           decoration: BoxDecoration(
@@ -41,7 +42,7 @@ class LoginPage extends StatelessWidget {
                   style: TextStyle(color: Colors.white),
                   decoration: InputDecoration(
                     hintText: 'Email',
-                    hintStyle: TextStyle(color: Colors.white),
+                    hintStyle: TextStyle(color: Colors.white60),
                     fillColor: Color(0xFF40444B),
                     filled: true,
                     border: OutlineInputBorder(
@@ -59,7 +60,7 @@ class LoginPage extends StatelessWidget {
                   style: TextStyle(color: Colors.white),
                   decoration: InputDecoration(
                     hintText: 'Password',
-                    hintStyle: TextStyle(color: Colors.white),
+                    hintStyle: TextStyle(color: Colors.white60),
                     fillColor: Color(0xFF40444B),
                     filled: true,
                     border: OutlineInputBorder(
@@ -74,6 +75,7 @@ class LoginPage extends StatelessWidget {
               SizedBox(
                 width: 250, 
                 child: ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor:  Colors.green,),
                   onPressed: () {
                     // Supongamos que la autenticación es exitosa
                     // Navega a la página principal, general
@@ -83,7 +85,11 @@ class LoginPage extends StatelessWidget {
                       result: false, // Esto indica que esta ruta no es un resultado
                     );
                   },
-                  child: const Text('Login'),
+                  child: const Text(
+                    'Login', 
+                    style: TextStyle(color: Colors.white),
+                    ),
+                    
                 ),
               ),
               const SizedBox(height: 20),
