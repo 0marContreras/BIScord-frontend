@@ -1,106 +1,131 @@
-
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
-import 'package:socket_io_client/socket_io_client.dart' as IO;
+
+class ChatApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Chat App',
+      theme: ThemeData(
+        primaryColor: Colors.blue, // You can change this to fit your design
+      ),
+      home: ChatScreen(),
+    );
+  }
+}
 
 class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key});
-
   @override
-  State<ChatScreen> createState() => _ChatScreenState();
+  _ChatScreenState createState() => _ChatScreenState();
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  final TextEditingController textcontroller = TextEditingController();
-  final List<String> messages = <String>[];
-  late IO.Socket socket;
-  final FocusNode _focusNode = FocusNode();
+  final TextEditingController _textController = TextEditingController();
+  final List<ChatMessage> _messages = [];
 
-  @override
-  void initState() {
-    super.initState();
-    socket = IO.io("http://localhost:3000", <String, dynamic>{
-      "transports": ['websocket'],
-      "autoConnect": false,
+  void _handleSubmitted(String text) {
+    _textController.clear();
+    setState(() {
+      _messages.insert(0, ChatMessage(
+        text: text,
+      ));
     });
-
-    socket.connect();
-    socket.on("message", (data) {
-      setState(() {
-        messages.add(data);
-      });
-    });
-  }
-
-  @override
-  void dispose() {
-    socket.dispose();
-    super.dispose();
-    _focusNode.dispose();
-  }
-
-  void sendMessage() {
-    if (textcontroller.text.isNotEmpty) {
-      socket.emit("message", textcontroller.text);
-      textcontroller.clear();
-      _focusNode.requestFocus();
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.deepPurple.shade200,
-        appBar: AppBar(title: const Text("VsCord"),
-        backgroundColor: Colors.deepPurple,),
-        body: Column(
-          
+      appBar: AppBar(
+        title: Text('Chat'),
+      ),
+      body: Container(
+        color: Color(0xFF2C2F33),
+        child: Column(
           children: <Widget>[
-            Expanded(
-                child: ListView.builder(
-              itemCount: messages.length,
-              itemBuilder: (context, index) {
-                return ListTile(
-                  title: Text(messages[index]),
-                );
-              },
-            )),
-            Padding(
-                padding: const EdgeInsets.all(4.0),
-                child: Row(
-                  children: <Widget>[
-                    Expanded(
-                        child:
-                         TextField(
-                          
-                            onSubmitted: (value)=> sendMessage(),
-                            controller: textcontroller,
-                            focusNode: _focusNode,
-                            decoration: InputDecoration(
-                                
-                                hintText: "send message",
-                                hintStyle: TextStyle(
-                                  color: Colors.black,
-                                ),
-                                filled: true, 
-                                fillColor: Colors.deepPurple.shade100,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(20.0),
-                                  borderSide: BorderSide.none,
-                                ),
-                                
-                                ))),
-                    TextButton(
-                      style: TextButton.styleFrom(
-                        foregroundColor: Colors.deepPurple.shade800,
-                        backgroundColor: Colors.deepPurple.shade500
-                      ),
-                      onPressed: sendMessage,
-                      child: const Text('Send'),
-                    )
-                  ],
-                ))
+            Flexible(
+              child: ListView.builder(
+                padding: EdgeInsets.all(8.0),
+                reverse: true,
+                itemCount: _messages.length,
+                itemBuilder: (_, int index) => _messages[index],
+              ),
+            ),
+            Divider(height: 1.0),
+            Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardColor,
+              ),
+              child: _buildTextComposer(),
+            ),
           ],
-        ));
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextComposer() {
+    return IconTheme(
+      data: IconThemeData(color: Theme.of(context).colorScheme.secondary),
+      child: Container(
+        margin: EdgeInsets.symmetric(horizontal: 8.0),
+        child: Row(
+          children: <Widget>[
+            Flexible(
+              child: TextField(
+                controller: _textController,
+                onSubmitted: _handleSubmitted,
+                decoration: InputDecoration.collapsed(
+                  hintText: 'Send a message',
+                ),
+              ),
+            ),
+            IconButton(
+              icon: Icon(Icons.send),
+              onPressed: () => _handleSubmitted(_textController.text),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ChatMessage extends StatelessWidget {
+  final String text;
+
+  ChatMessage({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: 10.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Container(
+            margin: EdgeInsets.only(right: 16.0),
+            child: CircleAvatar(
+              child: Text('User'), // You can replace this with user avatar
+            ),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  'User Name', // You can replace this with user name
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Container(
+                  margin: EdgeInsets.only(top: 5.0),
+                  child: Text(text),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
