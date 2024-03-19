@@ -9,11 +9,16 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  http: ^1.2.1
+  socket_io_client: ^2.0.3+1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
+  shared_preferences: ^2.0.0
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/LogoBiscord.jpeg  
