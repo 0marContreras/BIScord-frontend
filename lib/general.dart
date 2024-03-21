@@ -32,16 +32,16 @@ class _GeneralPageState extends State<GeneralPage> {
         children: [
           // Column for the list of chats
           Container(
-            width: 200, // Width of the chat list
+            width: 80, // Width of the chat list
             color: Color.fromARGB(219, 35, 2, 93), // Background color for chat list
             child: ListView.builder(
               itemCount: 10, // Arbitrary number of elements
               itemBuilder: (context, index) {
-                return ChatItem(
+                return ChatBubble(
                   index: index,
                   isSelected: index == _selectedChatIndex,
                   onSelect: _selectChat,
-                ); // Each element is an interactive ChatItem
+                ); // Each element is an interactive ChatBubble
               },
             ),
           ),
@@ -50,7 +50,7 @@ class _GeneralPageState extends State<GeneralPage> {
             child: Container(
               color: Color.fromARGB(255, 90, 14, 161), // Background color for chat content
               child: Center(
-                child: Text('Contenido del Chat'),
+                child: Text('Chat Content'),
               ),
             ),
           ),
@@ -129,7 +129,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                     _sendMessage();
                   },
                   icon: Icon(Icons.send),
-                  
                 ),
               ],
             ),
@@ -150,12 +149,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   }
 }
 
-class ChatItem extends StatelessWidget {
+class ChatBubble extends StatelessWidget {
   final int index;
   final bool isSelected;
   final Function(int) onSelect;
 
-  const ChatItem({
+  const ChatBubble({
     Key? key,
     required this.index,
     required this.isSelected,
@@ -169,16 +168,37 @@ class ChatItem extends StatelessWidget {
         onSelect(index);
       },
       child: Container(
-        padding: EdgeInsets.all(10),
-        color: isSelected ? Color.fromARGB(255, 26, 0, 51) : null, // Color when selected
-        child: Text(
-          'Chat $index',
-          style: TextStyle(
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            color: Colors.white, // Text color
+        width: 50,
+        height: 50,
+        margin: EdgeInsets.symmetric(vertical: 5),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: _getColorForIndex(index), // Color based on index
+          border: Border.all(
+            color: isSelected ? Colors.white : Colors.transparent, // Border color when selected
+            width: isSelected ? 2 : 0, // Border width when selected
           ),
         ),
       ),
     );
+  }
+
+  Color _getColorForIndex(int index) {
+    // List of colors for chat bubbles
+    List<Color> colors = [
+      Colors.blue,
+      Colors.green,
+      Colors.orange,
+      Colors.pink,
+      Colors.purple,
+      Colors.red,
+      Colors.yellow,
+      Colors.teal,
+      Colors.amber,
+      Colors.indigo,
+    ];
+
+    // Use modulo operator to cycle through colors list
+    return colors[index % colors.length];
   }
 }
