@@ -64,7 +64,7 @@ class LoginPage extends StatelessWidget {
                     fillColor: Color.fromARGB(255, 255, 255, 255),
                     filled: true,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(50),
                       borderSide: BorderSide.none,
                     ),
                   ),
@@ -83,7 +83,7 @@ class LoginPage extends StatelessWidget {
                     fillColor: Color.fromARGB(255, 255, 255, 255),
                     filled: true,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(50),
                       borderSide: BorderSide.none,
                     ),
                   ),
@@ -201,7 +201,7 @@ class LoginPage extends StatelessWidget {
                   );
                 },
                 child: Text(
-                  'Register',
+                  'If you have not register yet click here',
                   style: TextStyle(
                     color: Colors.blue.shade600,
                   ),

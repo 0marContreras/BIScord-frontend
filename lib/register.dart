@@ -68,37 +68,46 @@ class RegisterPage extends StatelessWidget {
               SizedBox(height: 20,),
 
               
-              TextField(
-                controller: emailController,
-                style: TextStyle(color: const Color.fromARGB(255, 17, 17, 17)),
-                decoration: InputDecoration(
-                  hintText: 'Email',
-                  hintStyle: TextStyle(
-                      color: const Color.fromARGB(153, 107, 107, 107)),
-                  fillColor: Color.fromARGB(255, 255, 255, 255),
-                  filled: true,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(50),
-                    borderSide: BorderSide.none,
+              Container(
+                width: 400,
+                height: 50,
+                child: TextField(
+                  controller: emailController,
+                  style: TextStyle(color: Color.fromARGB(255, 21, 21, 21)),
+                  decoration: InputDecoration(
+                    hintText: 'Email',
+                    hintStyle: TextStyle(
+                        color: const Color.fromARGB(153, 107, 107, 107)),
+                    fillColor: Color.fromARGB(255, 255, 255, 255),
+                    filled: true,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(50),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
                 ),
               ),
               SizedBox(height: 20,),
-              TextField(
-                controller: passwordController,
-                style: TextStyle(color: const Color.fromARGB(255, 17, 17, 17)),
-                decoration: InputDecoration(
-                  hintText: 'Password',
-                  hintStyle: TextStyle(
-                      color: const Color.fromARGB(153, 107, 107, 107)),
-                  fillColor: Color.fromARGB(255, 255, 255, 255),
-                  filled: true,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(50),
-                    borderSide: BorderSide.none,
+
+              Container(
+                width: 400,
+                height: 50,
+                child: TextField(
+                  controller: passwordController,
+                  style: TextStyle(color: Color.fromARGB(255, 21, 21, 21)),
+                  decoration: InputDecoration(
+                    hintText: 'Password',
+                    hintStyle: TextStyle(
+                        color: const Color.fromARGB(153, 107, 107, 107)),
+                    fillColor: Color.fromARGB(255, 255, 255, 255),
+                    filled: true,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(50),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
+                  obscureText: true,
                 ),
-                obscureText: true,
               ),
               SizedBox(height: 20,),
 
