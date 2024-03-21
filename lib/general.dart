@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:socket_io_client/socket_io_client.dart' as IO;
 
 void main() {
   runApp(MaterialApp(
@@ -97,18 +98,36 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.purple.shade200,
       appBar: AppBar(
         title: Text('Chat ${widget.chatIndex}'),
+        backgroundColor: Colors.purple.shade800,
       ),
       body: Column(
+        
         children: [
+          
           Expanded(
+            
             child: ListView.builder(
+              
               itemCount: _messages.length,
               itemBuilder: (context, index) {
-                return ListTile(
-                  title: Text(_messages[index]),
-                );
+                return Padding(
+                  padding: EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
+                  child: Container(
+                      padding: EdgeInsets.all(8.0),
+                      decoration: BoxDecoration(
+                        color: _messages[index].startsWith('You:') ? Colors.orange.shade500 : Colors.white, // You can customize colors here
+                        borderRadius: BorderRadius.circular(12.0), // You can adjust the radius to make it more or less rounded
+                      ),
+                      child: Text(
+                        _messages[index],
+                        style: TextStyle(color: Colors.black),
+                      ),
+                    ),
+                  );
+                
               },
             ),
           ),
@@ -119,8 +138,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                 Expanded(
                   child: TextField(
                     controller: _textController,
+                     
                     decoration: InputDecoration(
+                      filled: true,
+                      fillColor: Colors.white,
                       hintText: 'Type a message...',
+                      
                     ),
                   ),
                 ),
@@ -129,6 +152,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                     _sendMessage();
                   },
                   icon: Icon(Icons.send),
+                  color: Colors.purple.shade800,
                   
                 ),
               ],
@@ -140,7 +164,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   }
 
   void _sendMessage() {
-    String message = _textController.text;
+    String message = 'you: '+ _textController.text;
     if (message.isNotEmpty) {
       setState(() {
         _messages.add(message);
