@@ -1,3 +1,5 @@
+
+
 import 'package:flutter/material.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 
@@ -88,12 +90,46 @@ class ChatDetailScreen extends StatefulWidget {
   const ChatDetailScreen({Key? key, required this.chatIndex}) : super(key: key);
 
   @override
-  _ChatDetailScreenState createState() => _ChatDetailScreenState();
+  State<ChatDetailScreen> createState() => _ChatDetailScreenState();
 }
 
 class _ChatDetailScreenState extends State<ChatDetailScreen> {
-  List<String> _messages = [];
-  TextEditingController _textController = TextEditingController();
+  List<String> _messages = <String>[];
+  final TextEditingController _textController = TextEditingController();
+  late IO.Socket socket;
+  final FocusNode _focusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    socket = IO.io("http://localhost:3000", <String, dynamic>{
+      "transports": ['websocket'],
+      "autoConnect": false,
+    });
+
+    socket.connect();
+    socket.on("message", (data) {
+      setState(() {
+        _messages.add(data);
+      });
+    });
+  }
+
+    @override
+  void dispose() {
+    socket.dispose();
+    super.dispose();
+    _focusNode.dispose();
+  }
+
+  void sendMessage() {
+    if (_textController.text.isNotEmpty) {
+      socket.emit("message", _textController.text);
+      _textController.clear();
+      _focusNode.requestFocus();
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -149,7 +185,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                 ),
                 IconButton(
                   onPressed: () {
-                    _sendMessage();
+                    sendMessage();
                   },
                   icon: Icon(Icons.send),
                   color: Colors.purple.shade800,
