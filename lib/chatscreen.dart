@@ -22,6 +22,13 @@ class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _textController = TextEditingController();
   final List<ChatMessage> _messages = [];
 
+  // Example list of channels fetched from the database
+  List<String> _channels = [
+    'Channel 1',
+    'Channel 2',
+    'Channel 3',
+  ];
+
   void _handleSubmitted(String text) {
     _textController.clear();
     setState(() {
@@ -41,6 +48,23 @@ class _ChatScreenState extends State<ChatScreen> {
         color: Color(0xFF2C2F33),
         child: Column(
           children: <Widget>[
+            // List of channels
+            Container(
+              color: Theme.of(context).cardColor,
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: _channels.length,
+                itemBuilder: (context, index) {
+                  return ListTile(
+                    title: Text(_channels[index]),
+                    onTap: () {
+                      // Handle channel selection
+                    },
+                  );
+                },
+              ),
+            ),
+            Divider(height: 1.0),
             Flexible(
               child: ListView.builder(
                 padding: EdgeInsets.all(8.0),
