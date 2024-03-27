@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 void main() {
   runApp(MaterialApp(
@@ -12,12 +14,45 @@ class GeneralPage extends StatefulWidget {
 }
 
 class _GeneralPageState extends State<GeneralPage> {
+  List<dynamic> data = [];
   int _selectedChatIndex = -1;
 
   void _selectChat(int index) {
     setState(() {
       _selectedChatIndex = index;
     });
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChatScreen(chatIndex: index),
+      ),
+    ).then((value) {
+      // Reset the selected chat index when returning from ChatScreen
+      setState(() {
+        _selectedChatIndex = -1;
+      });
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    fetchData(); // Call the method to fetch data when the screen loads
+  }
+
+  Future<void> fetchData() async {
+    final response = await http.get(Uri.parse('http://localhost:3000/getUsers'));
+
+    if (response.statusCode == 200) {
+      // If the server returns a 200 OK response, parse the JSON
+      setState(() {
+        data = json.decode(response.body);
+      });
+      print(data);
+    } else {
+      // If the server did not return a 200 OK response, throw an exception
+      throw Exception('Failed to load data');
+    }
   }
 
   @override
@@ -37,11 +72,11 @@ class _GeneralPageState extends State<GeneralPage> {
             child: ListView.builder(
               itemCount: 10, // Arbitrary number of elements
               itemBuilder: (context, index) {
-                return ChatBubble(
+                return ChatThumbnail(
                   index: index,
                   isSelected: index == _selectedChatIndex,
                   onSelect: _selectChat,
-                ); // Each element is an interactive ChatBubble
+                ); // Each element is an interactive ChatThumbnail
               },
             ),
           ),
@@ -50,111 +85,24 @@ class _GeneralPageState extends State<GeneralPage> {
             child: Container(
               color: Color.fromARGB(255, 90, 14, 161), // Background color for chat content
               child: Center(
-                child: Text('Chat Content'),
+                child: _selectedChatIndex == -1
+                    ? Text('Select a chat to send a message.')
+                    : ChatScreen(chatIndex: _selectedChatIndex),
               ),
-            ),
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          if (_selectedChatIndex != -1) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ChatDetailScreen(
-                  chatIndex: _selectedChatIndex,
-                ),
-              ),
-            );
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Select a chat to send a message.'),
-              ),
-            );
-          }
-        },
-        child: Icon(Icons.send),
-      ),
-    );
-  }
-}
-
-class ChatDetailScreen extends StatefulWidget {
-  final int chatIndex;
-
-  const ChatDetailScreen({Key? key, required this.chatIndex}) : super(key: key);
-
-  @override
-  _ChatDetailScreenState createState() => _ChatDetailScreenState();
-}
-
-class _ChatDetailScreenState extends State<ChatDetailScreen> {
-  List<String> _messages = [];
-  TextEditingController _textController = TextEditingController();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Chat ${widget.chatIndex}'),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                return ListTile(
-                  title: Text(_messages[index]),
-                );
-              },
-            ),
-          ),
-          Container(
-            padding: EdgeInsets.all(8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _textController,
-                    decoration: InputDecoration(
-                      hintText: 'Type a message...',
-                    ),
-                  ),
-                ),
-                IconButton(
-                  onPressed: () {
-                    _sendMessage();
-                  },
-                  icon: Icon(Icons.send),
-                ),
-              ],
             ),
           ),
         ],
       ),
     );
   }
-
-  void _sendMessage() {
-    String message = _textController.text;
-    if (message.isNotEmpty) {
-      setState(() {
-        _messages.add(message);
-        _textController.clear();
-      });
-    }
-  }
 }
 
-class ChatBubble extends StatelessWidget {
+class ChatThumbnail extends StatelessWidget {
   final int index;
   final bool isSelected;
   final Function(int) onSelect;
 
-  const ChatBubble({
+  const ChatThumbnail({
     Key? key,
     required this.index,
     required this.isSelected,
@@ -163,7 +111,7 @@ class ChatBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return GestureDetector(
       onTap: () {
         onSelect(index);
       },
@@ -179,6 +127,7 @@ class ChatBubble extends StatelessWidget {
             width: isSelected ? 2 : 0, // Border width when selected
           ),
         ),
+        child: Icon(Icons.connect_without_contact), // Placeholder for user icon
       ),
     );
   }
@@ -200,5 +149,81 @@ class ChatBubble extends StatelessWidget {
 
     // Use modulo operator to cycle through colors list
     return colors[index % colors.length];
+  }
+}
+
+class ChatScreen extends StatefulWidget {
+  final int chatIndex;
+
+  const ChatScreen({Key? key, required this.chatIndex}) : super(key: key);
+
+  @override
+  _ChatScreenState createState() => _ChatScreenState();
+}
+
+class _ChatScreenState extends State<ChatScreen> {
+  List<String> _messages = [];
+  TextEditingController _textController = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Chat Screen'),
+      ),
+      body: WillPopScope(
+        onWillPop: () async {
+          // Set the result to return when back button is pressed
+          Navigator.pop(context, true);
+          // Prevent back button from popping the route
+          return false;
+        },
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView.builder(
+                itemCount: _messages.length,
+                itemBuilder: (context, index) {
+                  return ListTile(
+                    title: Text(_messages[index]),
+                  );
+                },
+              ),
+            ),
+            Container(
+              padding: EdgeInsets.all(8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _textController,
+                      decoration: InputDecoration(
+                        hintText: 'Type a message...',
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      _sendMessage();
+                    },
+                    icon: Icon(Icons.send),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _sendMessage() {
+    String message = _textController.text;
+    if (message.isNotEmpty) {
+      setState(() {
+        _messages.add(message);
+        _textController.clear();
+      });
+    }
   }
 }

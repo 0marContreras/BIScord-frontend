@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'general.dart'; // Importa la página principal
 import 'register.dart'; // Importa la página de registro
