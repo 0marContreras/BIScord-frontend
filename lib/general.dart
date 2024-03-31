@@ -32,6 +32,9 @@ class _GeneralPageState extends State<GeneralPage> {
         _selectedChatIndex = -1;
       });
     });
+
+    // Print the email of the selected contact
+    print(data[index]['email']);
   }
 
   @override
@@ -76,6 +79,7 @@ class _GeneralPageState extends State<GeneralPage> {
                   index: index,
                   isSelected: index == _selectedChatIndex,
                   onSelect: _selectChat,
+                  chatIcon: Icons.connect_without_contact, // Icon for chat thumbnails
                 ); // Each element is an interactive ChatThumbnail
               },
             ),
@@ -84,10 +88,55 @@ class _GeneralPageState extends State<GeneralPage> {
           Expanded(
             child: Container(
               color: Color.fromARGB(255, 90, 14, 161), // Background color for chat content
-              child: Center(
-                child: _selectedChatIndex == -1
-                    ? Text('Select a chat to send a message.')
-                    : ChatScreen(chatIndex: _selectedChatIndex),
+              child: Column(
+                children: [
+                  // List of users as buttons
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: data.length,
+                      itemBuilder: (context, index) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4.0),
+                          child: TextButton(
+                            onPressed: () {
+                              _selectChat(index);
+                            },
+                            style: ButtonStyle(
+                              backgroundColor: MaterialStateProperty.resolveWith<Color>(
+                                (Set<MaterialState> states) {
+                                  // Set the background color of the button
+                                  if (states.contains(MaterialState.pressed)) {
+                                    return const Color.fromARGB(255, 255, 255, 255); // Color when pressed
+                                  }
+                                  return Color.fromARGB(255, 67, 6, 105); // Default color
+                                },
+                              ),
+                              foregroundColor: MaterialStateProperty.all<Color>(Colors.white), // Text color
+                              padding: MaterialStateProperty.all<EdgeInsetsGeometry>(EdgeInsets.all(12)), // Padding
+                              shape: MaterialStateProperty.all<OutlinedBorder>(
+                                RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)),
+                              ), // Shape of the button
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.account_circle), // Icon for users
+                                SizedBox(width: 8), // Space between icon and text
+                                Text(data[index]['username']), // Text
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  Expanded(
+                    child: Center(
+                      child: _selectedChatIndex == -1
+                          ? Text('Select a chat to send a message.')
+                          : ChatScreen(chatIndex: _selectedChatIndex),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -101,12 +150,14 @@ class ChatThumbnail extends StatelessWidget {
   final int index;
   final bool isSelected;
   final Function(int) onSelect;
+  final IconData chatIcon;
 
   const ChatThumbnail({
     Key? key,
     required this.index,
     required this.isSelected,
     required this.onSelect,
+    required this.chatIcon,
   }) : super(key: key);
 
   @override
@@ -123,11 +174,11 @@ class ChatThumbnail extends StatelessWidget {
           shape: BoxShape.circle,
           color: _getColorForIndex(index), // Color based on index
           border: Border.all(
-            color: isSelected ? Colors.white : Colors.transparent, // Border color when selected
+            color: isSelected ? Color.fromARGB(255, 255, 255, 255) : Colors.transparent, // Border color when selected
             width: isSelected ? 2 : 0, // Border width when selected
           ),
         ),
-        child: Icon(Icons.connect_without_contact), // Placeholder for user icon
+        child: Icon(chatIcon), // Icon for chat thumbnails
       ),
     );
   }
