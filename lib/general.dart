@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   runApp(MaterialApp(
@@ -17,24 +18,68 @@ class _GeneralPageState extends State<GeneralPage> {
   List<dynamic> data = [];
   int _selectedChatIndex = -1;
 
-  void _selectChat(int index) {
+  void _selectChat(int index) async {
     setState(() {
       _selectedChatIndex = index;
     });
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ChatScreen(chatIndex: index),
-      ),
-    ).then((value) {
-      // Reset the selected chat index when returning from ChatScreen
-      setState(() {
-        _selectedChatIndex = -1;
-      });
-    });
 
-    // Print the email of the selected contact
-    print(data[index]['email']);
+    // Get the user's email from local storage
+    final prefs = await SharedPreferences.getInstance();
+    final senderEmail = prefs.getString('email');
+
+    // Get the target email from the selected chat
+    final targetEmail = data[index]['email'];
+
+    // Create the request body
+    final Map<String, String> body = {
+      "senderId": senderEmail!,
+      "receptorId": targetEmail
+    };
+
+    // Make the POST request
+    final response = await http.post(
+      Uri.parse('http://localhost:3000/getChat'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(body),
+    );
+
+    // Handle the response here (e.g., navigate to the chat screen)
+    if (response.statusCode == 200) {
+      // If the server returns a 200 OK response, navigate to the chat screen
+      print(response.body);
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ChatScreen(chatIndex: index),
+        ),
+      ).then((value) {
+        // Reset the selected chat index when returning from ChatScreen
+        setState(() {
+          _selectedChatIndex = -1;
+        });
+      });
+    } else {
+      // If the server did not return a 200 OK response, show an error message
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('Error'),
+            content: Text('Failed to load chat. Please try again later.'),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text('OK'),
+              ),
+            ],
+          );
+        },
+      );
+    }
   }
 
   @override
