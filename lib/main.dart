@@ -1,6 +1,7 @@
 import 'package:biscord/chatscreen.dart';
 import 'login.dart';
 import 'register.dart';
+import 'chatscreen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 
@@ -19,7 +20,7 @@ class MyApp extends StatelessWidget {
         visualDensity: VisualDensity.adaptivePlatformDensity,
 
       ),
-    home: LoginPage(),
+    home: ChatScreen(),
     
 
     );
