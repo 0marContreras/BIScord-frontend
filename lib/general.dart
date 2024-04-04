@@ -53,7 +53,7 @@ class _GeneralPageState extends State<GeneralPage> {
       setState(() {
         data = json.decode(response.body);
       });
-      print(data);
+      //print(data);
     } else {
       // If the server did not return a 200 OK response, throw an exception
       throw Exception('Failed to load data');
@@ -247,38 +247,53 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   void dispose() {
-    socket.emit('logout');
-    socket.disconnect();
-    super.dispose();
+    // Remove socket event listeners
+  socket.off('private_message');
+
+  // Disconnect the socket
+  socket.emit('logout');
+  socket.disconnect();
+
+  super.dispose();
   }
 
   Future<void> fetchMessages() async {
-    final prefs = await SharedPreferences.getInstance();
-    final senderEmail = prefs.getString('email');
+  final prefs = await SharedPreferences.getInstance();
+  final senderEmail = prefs.getString('email');
 
-    // Perform HTTP request to fetch messages from the server
-    final response = await http.post(
-      Uri.parse('http://localhost:3000/getChat'),
-      headers: <String, String>{
-        'Content-Type': 'application/json; charset=UTF-8',
-      },
-      body: jsonEncode({
-        'senderId': senderEmail, // Replace with the actual sender email
-        'receptorId': widget.targetEmail,
-      }),
-    );
+  // Perform HTTP request to fetch messages from the server
+  final response = await http.post(
+    Uri.parse('http://localhost:3000/getChat'),
+    headers: <String, String>{
+      'Content-Type': 'application/json; charset=UTF-8',
+    },
+    body: jsonEncode({
+      'senderId': senderEmail, // Replace with the actual sender email
+      'receptorId': widget.targetEmail,
+    }),
+  );
 
-    if (response.statusCode == 200) {
-      // If the server returns a 200 OK response, parse the JSON and update the messages list
-      final List<dynamic> messages = json.decode(response.body);
-      setState(() {
-        _messages.addAll(messages.map((message) => '${message['senderId']}: ${message['content']}'));
-      });
-    } else {
-      // Handle errors if needed
-      print('Failed to fetch messages: ${response.statusCode}');
-    }
+  if (response.statusCode == 200) {
+    // If the server returns a 200 OK response, parse the JSON and update the messages list
+    final List<dynamic> messages = json.decode(response.body);
+
+    // Sort messages by createdAt date
+    messages.sort((a, b) {
+      final int timestampA = DateTime.parse(a['createdAt']).millisecondsSinceEpoch;
+      final int timestampB = DateTime.parse(b['createdAt']).millisecondsSinceEpoch;
+      return timestampA - timestampB;
+    });
+
+    setState(() {
+      _messages.clear(); // Clear existing messages
+      _messages.addAll(messages.map((message) => '${message['senderId']}: ${message['content']}'));
+    });
+  } else {
+    // Handle errors if needed
+    print('Failed to fetch messages: ${response.statusCode}');
   }
+}
+
 
   void _sendMessage() async {
     final prefs = await SharedPreferences.getInstance();
