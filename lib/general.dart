@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:socket_io_client/socket_io_client.dart' as IO;
 void main() {
   runApp(MaterialApp(
     home: GeneralPage(),
@@ -23,63 +23,20 @@ class _GeneralPageState extends State<GeneralPage> {
       _selectedChatIndex = index;
     });
 
-    // Get the user's email from local storage
-    final prefs = await SharedPreferences.getInstance();
-    final senderEmail = prefs.getString('email');
-
     // Get the target email from the selected chat
     final targetEmail = data[index]['email'];
 
-    // Create the request body
-    final Map<String, String> body = {
-      "senderId": senderEmail!,
-      "receptorId": targetEmail
-    };
-
-    // Make the POST request
-    final response = await http.post(
-      Uri.parse('http://localhost:3000/getChat'),
-      headers: <String, String>{
-        'Content-Type': 'application/json; charset=UTF-8',
-      },
-      body: jsonEncode(body),
-    );
-
-    // Handle the response here (e.g., navigate to the chat screen)
-    if (response.statusCode == 200) {
-      // If the server returns a 200 OK response, navigate to the chat screen
-      print(response.body);
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ChatScreen(chatIndex: index),
-        ),
-      ).then((value) {
-        // Reset the selected chat index when returning from ChatScreen
-        setState(() {
-          _selectedChatIndex = -1;
-        });
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChatScreen(targetEmail: targetEmail),
+      ),
+    ).then((value) {
+      // Reset the selected chat index when returning from ChatScreen
+      setState(() {
+        _selectedChatIndex = -1;
       });
-    } else {
-      // If the server did not return a 200 OK response, show an error message
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text('Error'),
-            content: Text('Failed to load chat. Please try again later.'),
-            actions: <Widget>[
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-                child: Text('OK'),
-              ),
-            ],
-          );
-        },
-      );
-    }
+    });
   }
 
   @override
@@ -148,7 +105,7 @@ class _GeneralPageState extends State<GeneralPage> {
                             },
                             style: ButtonStyle(
                               backgroundColor: MaterialStateProperty.resolveWith<Color>(
-                                (Set<MaterialState> states) {
+                                    (Set<MaterialState> states) {
                                   // Set the background color of the button
                                   if (states.contains(MaterialState.pressed)) {
                                     return const Color.fromARGB(255, 255, 255, 255); // Color when pressed
@@ -178,7 +135,7 @@ class _GeneralPageState extends State<GeneralPage> {
                     child: Center(
                       child: _selectedChatIndex == -1
                           ? Text('Select a chat to send a message.')
-                          : ChatScreen(chatIndex: _selectedChatIndex),
+                          : Container(), // Chat screen will be displayed here
                     ),
                   ),
                 ],
@@ -249,17 +206,97 @@ class ChatThumbnail extends StatelessWidget {
 }
 
 class ChatScreen extends StatefulWidget {
-  final int chatIndex;
+  final String targetEmail;
 
-  const ChatScreen({Key? key, required this.chatIndex}) : super(key: key);
+  const ChatScreen({Key? key, required this.targetEmail}) : super(key: key);
 
   @override
   _ChatScreenState createState() => _ChatScreenState();
 }
 
 class _ChatScreenState extends State<ChatScreen> {
+  late IO.Socket socket;
   List<String> _messages = [];
   TextEditingController _textController = TextEditingController();
+  
+ void initState() {
+  SharedPreferences.getInstance().then((prefs) {
+    final senderEmail = prefs.getString('email');
+    fetchMessages();
+
+    // Establish socket connection
+    socket = IO.io('http://localhost:3000', <String, dynamic>{
+      'transports': ['websocket'],
+      'autoConnect': false,
+    });
+    socket.connect();
+    // Emit login event with user's email
+    socket.emit('login', senderEmail);
+    // Listen for private messages
+    socket.on('private_message', (data) {
+      setState(() {
+        _messages.add('${data['sender']}: ${data['message']}');
+      });
+    });
+    // Fetch messages from the server
+    
+  });
+
+  super.initState();
+}
+
+  @override
+  void dispose() {
+    socket.emit('logout');
+    socket.disconnect();
+    super.dispose();
+  }
+
+  Future<void> fetchMessages() async {
+    final prefs = await SharedPreferences.getInstance();
+    final senderEmail = prefs.getString('email');
+
+    // Perform HTTP request to fetch messages from the server
+    final response = await http.post(
+      Uri.parse('http://localhost:3000/getChat'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode({
+        'senderId': senderEmail, // Replace with the actual sender email
+        'receptorId': widget.targetEmail,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      // If the server returns a 200 OK response, parse the JSON and update the messages list
+      final List<dynamic> messages = json.decode(response.body);
+      setState(() {
+        _messages.addAll(messages.map((message) => '${message['senderId']}: ${message['content']}'));
+      });
+    } else {
+      // Handle errors if needed
+      print('Failed to fetch messages: ${response.statusCode}');
+    }
+  }
+
+  void _sendMessage() async {
+    final prefs = await SharedPreferences.getInstance();
+    final senderEmail = prefs.getString('email');
+    String message = _textController.text;
+    if (message.isNotEmpty) {
+      // Emit private_message event
+      socket.emit('private_message', {
+        'sender': senderEmail,
+        'receptor': widget.targetEmail,
+        'message': message,
+      });
+      setState(() {
+        _messages.add('Me: $message');
+        _textController.clear();
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -267,59 +304,39 @@ class _ChatScreenState extends State<ChatScreen> {
       appBar: AppBar(
         title: Text('Chat Screen'),
       ),
-      body: WillPopScope(
-        onWillPop: () async {
-          // Set the result to return when back button is pressed
-          Navigator.pop(context, true);
-          // Prevent back button from popping the route
-          return false;
-        },
-        child: Column(
-          children: [
-            Expanded(
-              child: ListView.builder(
-                itemCount: _messages.length,
-                itemBuilder: (context, index) {
-                  return ListTile(
-                    title: Text(_messages[index]),
-                  );
-                },
-              ),
+      body: Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              itemCount: _messages.length,
+              itemBuilder: (context, index) {
+                return ListTile(
+                  title: Text(_messages[index]),
+                );
+              },
             ),
-            Container(
-              padding: EdgeInsets.all(8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _textController,
-                      decoration: InputDecoration(
-                        hintText: 'Type a message...',
-                      ),
+          ),
+          Container(
+            padding: EdgeInsets.all(8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _textController,
+                    decoration: InputDecoration(
+                      hintText: 'Type a message...',
                     ),
                   ),
-                  IconButton(
-                    onPressed: () {
-                      _sendMessage();
-                    },
-                    icon: Icon(Icons.send),
-                  ),
-                ],
-              ),
+                ),
+                IconButton(
+                  onPressed: _sendMessage,
+                  icon: Icon(Icons.send),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
-  }
-
-  void _sendMessage() {
-    String message = _textController.text;
-    if (message.isNotEmpty) {
-      setState(() {
-        _messages.add(message);
-        _textController.clear();
-      });
-    }
   }
 }
