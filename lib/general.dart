@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
+
 void main() {
   runApp(MaterialApp(
     home: GeneralPage(),
@@ -74,16 +75,38 @@ class _GeneralPageState extends State<GeneralPage> {
           Container(
             width: 80, // Width of the chat list
             color: Color.fromARGB(219, 35, 2, 93), // Background color for chat list
-            child: ListView.builder(
-              itemCount: 10, // Arbitrary number of elements
-              itemBuilder: (context, index) {
-                return ChatThumbnail(
-                  index: index,
-                  isSelected: index == _selectedChatIndex,
-                  onSelect: _selectChat,
-                  chatIcon: Icons.connect_without_contact, // Icon for chat thumbnails
-                ); // Each element is an interactive ChatThumbnail
-              },
+            child: Column(
+              children: [
+                // Add button to add new chat
+                SizedBox(height: 16),
+                GestureDetector(
+                  onTap: () {
+                    // Handle adding new chat here
+                  },
+                  child: Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Color.fromARGB(255, 63, 1, 90), // Circle color
+                    ),
+                    child: Icon(Icons.add, color: Colors.white), // Icon for adding new chat
+                  ),
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: data.length, // Number of elements based on data length
+                    itemBuilder: (context, index) {
+                      return ChatThumbnail(
+                        index: index,
+                        isSelected: index == _selectedChatIndex,
+                        onSelect: _selectChat,
+                        chatIcon: Icons.connect_without_contact, // Icon for chat thumbnails
+                      ); // Each element is an interactive ChatThumbnail
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
           // Column for the chat content
@@ -131,11 +154,14 @@ class _GeneralPageState extends State<GeneralPage> {
                       },
                     ),
                   ),
+                  SizedBox(height: _selectedChatIndex == -1 ? 0 : 8), // Adjusted SizedBox
+                  if (_selectedChatIndex == -1) // Display only if no chat selected
+                    Text(''),
                   Expanded(
-                    child: Center(
-                      child: _selectedChatIndex == -1
-                          ? Text('Select a chat to send a message.')
-                          : Container(), // Chat screen will be displayed here
+                    child: _selectedChatIndex == -1
+                        ? Container() // If no chat selected, show empty container
+                        : Center(
+                      child: Container(), // Chat screen will be displayed here
                     ),
                   ),
                 ],
@@ -218,82 +244,80 @@ class _ChatScreenState extends State<ChatScreen> {
   late IO.Socket socket;
   List<String> _messages = [];
   TextEditingController _textController = TextEditingController();
-  
- void initState() {
-  SharedPreferences.getInstance().then((prefs) {
-    final senderEmail = prefs.getString('email');
-    fetchMessages();
 
-    // Establish socket connection
-    socket = IO.io('http://localhost:3000', <String, dynamic>{
-      'transports': ['websocket'],
-      'autoConnect': false,
-    });
-    socket.connect();
-    // Emit login event with user's email
-    socket.emit('login', senderEmail);
-    // Listen for private messages
-    socket.on('private_message', (data) {
-      setState(() {
-        _messages.add('${data['sender']}: ${data['message']}');
+  void initState() {
+    SharedPreferences.getInstance().then((prefs) {
+      final senderEmail = prefs.getString('email');
+      fetchMessages();
+
+      // Establish socket connection
+      socket = IO.io('http://localhost:3000', <String, dynamic>{
+        'transports': ['websocket'],
+        'autoConnect': false,
       });
+      socket.connect();
+      // Emit login event with user's email
+      socket.emit('login', senderEmail);
+      // Listen for private messages
+      socket.on('private_message', (data) {
+        setState(() {
+          _messages.add('${data['sender']}: ${data['message']}');
+        });
+      });
+      // Fetch messages from the server
     });
-    // Fetch messages from the server
-    
-  });
 
-  super.initState();
-}
+    super.initState();
+  }
 
   @override
   void dispose() {
     // Remove socket event listeners
-  socket.off('private_message');
+    socket.off('private_message');
 
-  // Disconnect the socket
-  socket.emit('logout');
-  socket.disconnect();
+    // Disconnect the socket
+    socket.emit('logout');
+    socket.disconnect();
 
-  super.dispose();
+    super.dispose();
   }
 
   Future<void> fetchMessages() async {
-  final prefs = await SharedPreferences.getInstance();
-  final senderEmail = prefs.getString('email');
+    final prefs = await SharedPreferences.getInstance();
+    final senderEmail = prefs.getString('email');
 
-  // Perform HTTP request to fetch messages from the server
-  final response = await http.post(
-    Uri.parse('http://localhost:3000/getChat'),
-    headers: <String, String>{
-      'Content-Type': 'application/json; charset=UTF-8',
-    },
-    body: jsonEncode({
-      'senderId': senderEmail, // Replace with the actual sender email
-      'receptorId': widget.targetEmail,
-    }),
-  );
+    // Perform HTTP request to fetch messages from the server
+    final response = await http.post(
+      Uri.parse('http://localhost:3000/getChat'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode({
+        'senderId': senderEmail, // Replace with the actual sender email
+        'receptorId': widget.targetEmail,
+      }),
+    );
 
-  if (response.statusCode == 200) {
-    // If the server returns a 200 OK response, parse the JSON and update the messages list
-    final List<dynamic> messages = json.decode(response.body);
+    if (response.statusCode == 200) {
+      // If the server returns a 200 OK response, parse the JSON and update the messages list
+      final List<dynamic> messages = json.decode(response.body);
 
-    // Sort messages by createdAt date
-    messages.sort((a, b) {
-      final int timestampA = DateTime.parse(a['createdAt']).millisecondsSinceEpoch;
-      final int timestampB = DateTime.parse(b['createdAt']).millisecondsSinceEpoch;
-      return timestampA - timestampB;
-    });
+      // Sort messages by createdAt date
+      messages.sort((a, b) {
+        final int timestampA = DateTime.parse(a['createdAt']).millisecondsSinceEpoch;
+        final int timestampB = DateTime.parse(b['createdAt']).millisecondsSinceEpoch;
+        return timestampA - timestampB;
+      });
 
-    setState(() {
-      _messages.clear(); // Clear existing messages
-      _messages.addAll(messages.map((message) => '${message['senderId']}: ${message['content']}'));
-    });
-  } else {
-    // Handle errors if needed
-    print('Failed to fetch messages: ${response.statusCode}');
+      setState(() {
+        _messages.clear(); // Clear existing messages
+        _messages.addAll(messages.map((message) => '${message['senderId']}: ${message['content']}'));
+      });
+    } else {
+      // Handle errors if needed
+      print('Failed to fetch messages: ${response.statusCode}');
+    }
   }
-}
-
 
   void _sendMessage() async {
     final prefs = await SharedPreferences.getInstance();
