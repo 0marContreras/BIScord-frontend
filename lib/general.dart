@@ -378,6 +378,8 @@ class _LobbyChatScreenState extends State<LobbyChatScreen> {
   void initState() {
     super.initState();
     fetchUserEmail();
+    joinLobby(widget.lobbyId);
+    fetchLobbyMessages(widget.lobbyId);
     widget.socket.on('lobby_message', (data) {
       setState(() {
         // Check if the sender is not the current user before adding the message
@@ -386,7 +388,6 @@ class _LobbyChatScreenState extends State<LobbyChatScreen> {
         }
       });
     });
-    joinLobby(widget.lobbyId);
   }
 
   Future<void> fetchUserEmail() async {
@@ -405,6 +406,29 @@ class _LobbyChatScreenState extends State<LobbyChatScreen> {
 
   void joinLobby(String lobbyId) {
     widget.socket.emit('join_lobby', lobbyId);
+  }
+
+  Future<void> fetchLobbyMessages(String lobbyId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('http://localhost:3000/getLobbyMessages'),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode({'lobbyId': lobbyId}),
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> messages = json.decode(response.body);
+        setState(() {
+          _messages.addAll(messages.map((message) => '${message['senderId']}: ${message['content']}'));
+        });
+      } else {
+        print('Failed to fetch lobby messages: ${response.statusCode}');
+      }
+    } catch (error) {
+      print('Failed to fetch lobby messages: $error');
+    }
   }
 
   void _sendMessage() async {
