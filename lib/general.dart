@@ -20,12 +20,14 @@ class _GeneralPageState extends State<GeneralPage> {
   List<dynamic> userLobbies = [];
   int _selectedChatIndex = -1;
   late String userEmail;
+  late IO.Socket socket;
 
   @override
   void initState() {
     super.initState();
     fetchData();
     fetchUserEmail();
+    initializeSocket();
   }
 
   Future<void> fetchData() async {
@@ -67,7 +69,22 @@ class _GeneralPageState extends State<GeneralPage> {
     }
   }
 
-  void _selectChat(int index) async {
+  void initializeSocket() async {
+    socket = IO.io('http://localhost:3000', <String, dynamic>{
+      'transports': ['websocket'],
+      'autoConnect': false,
+    });
+    socket.connect();
+    final prefs = await SharedPreferences.getInstance();
+    final email = prefs.getString('email');
+    socket.emit('login', email);
+  }
+
+  void joinLobby(String lobbyId) {
+    socket.emit('join_lobby', lobbyId);
+  }
+
+  void _selectChat(int index) {
     setState(() {
       _selectedChatIndex = index;
     });
@@ -77,7 +94,7 @@ class _GeneralPageState extends State<GeneralPage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ChatScreen(targetEmail: targetEmail),
+        builder: (context) => ChatScreen(targetEmail: targetEmail, socket: socket),
       ),
     ).then((value) {
       setState(() {
@@ -121,7 +138,13 @@ class _GeneralPageState extends State<GeneralPage> {
                     children: userLobbies.map((lobby) {
                       return GestureDetector(
                         onTap: () {
-                          // Handle lobby selection
+                          joinLobby(lobby['_id']);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => LobbyChatScreen(lobbyId: lobby['_id'], socket: socket),
+                            ),
+                          );
                         },
                         child: Container(
                           margin: EdgeInsets.symmetric(vertical: 5),
@@ -212,46 +235,35 @@ class _GeneralPageState extends State<GeneralPage> {
 
 class ChatScreen extends StatefulWidget {
   final String targetEmail;
+  final IO.Socket socket;
 
-  const ChatScreen({Key? key, required this.targetEmail}) : super(key: key);
+  const ChatScreen({Key? key, required this.targetEmail, required this.socket}) : super(key: key);
 
   @override
   _ChatScreenState createState() => _ChatScreenState();
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  late IO.Socket socket;
   List<String> _messages = [];
   TextEditingController _textController = TextEditingController();
 
   @override
   void initState() {
-    SharedPreferences.getInstance().then((prefs) {
-      final senderEmail = prefs.getString('email');
-      fetchMessages();
-
-      socket = IO.io('http://localhost:3000', <String, dynamic>{
-        'transports': ['websocket'],
-        'autoConnect': false,
-      });
-      socket.connect();
-      socket.emit('login', senderEmail);
-      socket.on('private_message', (data) {
-        setState(() {
-          _messages.add('${data['sender']}: ${data['message']}');
-        });
+    super.initState();
+    fetchMessages();
+    widget.socket.on('private_message', (data) {
+      setState(() {
+        _messages.add('${data['sender']}: ${data['message']}');
       });
     });
-
-    super.initState();
   }
 
   @override
   void dispose() {
-    socket.off('private_message');
-    socket.emit('logout');
-    socket.disconnect();
-
+    
+    widget.socket.off('private_message');
+    widget.socket.emit('logout');
+    
     super.dispose();
   }
 
@@ -292,7 +304,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final senderEmail = prefs.getString('email');
     String message = _textController.text;
     if (message.isNotEmpty) {
-      socket.emit('private_message', {
+      widget.socket.emit('private_message', {
         'sender': senderEmail,
         'receptor': widget.targetEmail,
         'message': message,
@@ -309,6 +321,114 @@ class _ChatScreenState extends State<ChatScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Chat Screen'),
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              itemCount: _messages.length,
+              itemBuilder: (context, index) {
+                return ListTile(
+                  title: Text(_messages[index]),
+                );
+              },
+            ),
+          ),
+          Container(
+            padding: EdgeInsets.all(8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _textController,
+                    decoration: InputDecoration(
+                      hintText: 'Type a message...',
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: _sendMessage,
+                  icon: Icon(Icons.send),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class LobbyChatScreen extends StatefulWidget {
+  final String lobbyId;
+  final IO.Socket socket;
+
+  const LobbyChatScreen({Key? key, required this.lobbyId, required this.socket}) : super(key: key);
+
+  @override
+  _LobbyChatScreenState createState() => _LobbyChatScreenState();
+}
+
+class _LobbyChatScreenState extends State<LobbyChatScreen> {
+  List<String> _messages = [];
+  TextEditingController _textController = TextEditingController();
+  late String userEmail;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchUserEmail();
+    widget.socket.on('lobby_message', (data) {
+      setState(() {
+        // Check if the sender is not the current user before adding the message
+        if (data['sender'] != userEmail) {
+          _messages.add('${data['sender']}: ${data['message']}');
+        }
+      });
+    });
+    joinLobby(widget.lobbyId);
+  }
+
+  Future<void> fetchUserEmail() async {
+    final prefs = await SharedPreferences.getInstance();
+    final email = prefs.getString('email');
+    setState(() {
+      userEmail = email!;
+    });
+  }
+
+  @override
+  void dispose() {
+    widget.socket.off('lobby_message');
+    super.dispose();
+  }
+
+  void joinLobby(String lobbyId) {
+    widget.socket.emit('join_lobby', lobbyId);
+  }
+
+  void _sendMessage() async {
+    final prefs = await SharedPreferences.getInstance();
+    final senderEmail = prefs.getString('email');
+    String message = _textController.text;
+    if (message.isNotEmpty) {
+      widget.socket.emit('lobby_message', {
+        'sender': senderEmail,
+        'message': message,
+        'lobbyId': widget.lobbyId,
+      });
+      setState(() {
+        _messages.add('Me: $message');
+        _textController.clear();
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Lobby Chat'),
       ),
       body: Column(
         children: [
