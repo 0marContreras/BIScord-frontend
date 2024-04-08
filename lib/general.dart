@@ -17,14 +17,61 @@ class GeneralPage extends StatefulWidget {
 
 class _GeneralPageState extends State<GeneralPage> {
   List<dynamic> data = [];
+  List<dynamic> userLobbies = [];
   int _selectedChatIndex = -1;
+  late String userEmail;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchData();
+    fetchUserEmail();
+  }
+
+  Future<void> fetchData() async {
+    final response = await http.get(Uri.parse('http://localhost:3000/getUsers'));
+
+    if (response.statusCode == 200) {
+      setState(() {
+        data = json.decode(response.body);
+      });
+    } else {
+      throw Exception('Failed to load data');
+    }
+  }
+
+  Future<void> fetchUserEmail() async {
+    final prefs = await SharedPreferences.getInstance();
+    final email = prefs.getString('email');
+    setState(() {
+      userEmail = email!;
+    });
+    fetchUserLobbies(email!);
+  }
+
+  Future<void> fetchUserLobbies(String email) async {
+    final response = await http.post(
+      Uri.parse('http://localhost:3000/getUserLobbies'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode({'userId': email}),
+    );
+
+    if (response.statusCode == 200) {
+      setState(() {
+        userLobbies = json.decode(response.body);
+      });
+    } else {
+      throw Exception('Failed to load user lobbies');
+    }
+  }
 
   void _selectChat(int index) async {
     setState(() {
       _selectedChatIndex = index;
     });
 
-    // Get the target email from the selected chat
     final targetEmail = data[index]['email'];
 
     Navigator.push(
@@ -33,32 +80,10 @@ class _GeneralPageState extends State<GeneralPage> {
         builder: (context) => ChatScreen(targetEmail: targetEmail),
       ),
     ).then((value) {
-      // Reset the selected chat index when returning from ChatScreen
       setState(() {
         _selectedChatIndex = -1;
       });
     });
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    fetchData(); // Call the method to fetch data when the screen loads
-  }
-
-  Future<void> fetchData() async {
-    final response = await http.get(Uri.parse('http://localhost:3000/getUsers'));
-
-    if (response.statusCode == 200) {
-      // If the server returns a 200 OK response, parse the JSON
-      setState(() {
-        data = json.decode(response.body);
-      });
-      //print(data);
-    } else {
-      // If the server did not return a 200 OK response, throw an exception
-      throw Exception('Failed to load data');
-    }
   }
 
   @override
@@ -71,51 +96,64 @@ class _GeneralPageState extends State<GeneralPage> {
       body: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Column for the list of chats
           Container(
-            width: 80, // Width of the chat list
-            color: Color.fromARGB(219, 35, 2, 93), // Background color for chat list
+            width: 80,
+            color: Color.fromARGB(219, 35, 2, 93),
             child: Column(
               children: [
-                // Add button to add new chat
                 SizedBox(height: 16),
                 GestureDetector(
-                  onTap: () {
-                    // Handle adding new chat here
-                  },
+                  onTap: () {},
                   child: Container(
                     width: 50,
                     height: 50,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Color.fromARGB(255, 63, 1, 90), // Circle color
+                      color: Color.fromARGB(255, 63, 1, 90),
                     ),
-                    child: Icon(Icons.add, color: Colors.white), // Icon for adding new chat
+                    child: Icon(Icons.add, color: Colors.white),
                   ),
                 ),
+                SizedBox(height: 16),
+                // Display user lobbies as color bubbles
                 Expanded(
-                  child: ListView.builder(
-                    itemCount: data.length, // Number of elements based on data length
-                    itemBuilder: (context, index) {
-                      return ChatThumbnail(
-                        index: index,
-                        isSelected: index == _selectedChatIndex,
-                        onSelect: _selectChat,
-                        chatIcon: Icons.connect_without_contact, // Icon for chat thumbnails
-                      ); // Each element is an interactive ChatThumbnail
-                    },
+                  child: Column(
+                    children: userLobbies.map((lobby) {
+                      return GestureDetector(
+                        onTap: () {
+                          // Handle lobby selection
+                        },
+                        child: Container(
+                          margin: EdgeInsets.symmetric(vertical: 5),
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.blue, // Replace with lobby color
+                          ),
+                          child: Center(
+                            child: Text(
+                              'L', // Example: Display 'L' for each lobby
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
                   ),
                 ),
               ],
             ),
           ),
-          // Column for the chat content
           Expanded(
             child: Container(
-              color: Color.fromARGB(255, 90, 14, 161), // Background color for chat content
+              color: Color.fromARGB(255, 90, 14, 161),
               child: Column(
                 children: [
-                  // List of users as buttons
                   Expanded(
                     child: ListView.builder(
                       itemCount: data.length,
@@ -128,25 +166,24 @@ class _GeneralPageState extends State<GeneralPage> {
                             },
                             style: ButtonStyle(
                               backgroundColor: MaterialStateProperty.resolveWith<Color>(
-                                    (Set<MaterialState> states) {
-                                  // Set the background color of the button
+                                (Set<MaterialState> states) {
                                   if (states.contains(MaterialState.pressed)) {
-                                    return const Color.fromARGB(255, 255, 255, 255); // Color when pressed
+                                    return const Color.fromARGB(255, 255, 255, 255);
                                   }
-                                  return Color.fromARGB(255, 67, 6, 105); // Default color
+                                  return Color.fromARGB(255, 67, 6, 105);
                                 },
                               ),
-                              foregroundColor: MaterialStateProperty.all<Color>(Colors.white), // Text color
-                              padding: MaterialStateProperty.all<EdgeInsetsGeometry>(EdgeInsets.all(12)), // Padding
+                              foregroundColor: MaterialStateProperty.all<Color>(Colors.white),
+                              padding: MaterialStateProperty.all<EdgeInsetsGeometry>(EdgeInsets.all(12)),
                               shape: MaterialStateProperty.all<OutlinedBorder>(
                                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)),
-                              ), // Shape of the button
+                              ),
                             ),
                             child: Row(
                               children: [
-                                Icon(Icons.account_circle), // Icon for users
-                                SizedBox(width: 8), // Space between icon and text
-                                Text(data[index]['username']), // Text
+                                Icon(Icons.account_circle),
+                                SizedBox(width: 8),
+                                Text(data[index]['username']),
                               ],
                             ),
                           ),
@@ -154,16 +191,15 @@ class _GeneralPageState extends State<GeneralPage> {
                       },
                     ),
                   ),
-                  SizedBox(height: _selectedChatIndex == -1 ? 0 : 8), // Adjusted SizedBox
-                  if (_selectedChatIndex == -1) // Display only if no chat selected
-                    Text(''),
-                  Expanded(
-                    child: _selectedChatIndex == -1
-                        ? Container() // If no chat selected, show empty container
-                        : Center(
-                      child: Container(), // Chat screen will be displayed here
+                  SizedBox(height: _selectedChatIndex == -1 ? 0 : 8),
+                  if (_selectedChatIndex == -1)
+                    Expanded(
+                      child: _selectedChatIndex == -1
+                          ? Container()
+                          : Center(
+                              child: Container(),
+                            ),
                     ),
-                  ),
                 ],
               ),
             ),
@@ -171,63 +207,6 @@ class _GeneralPageState extends State<GeneralPage> {
         ],
       ),
     );
-  }
-}
-
-class ChatThumbnail extends StatelessWidget {
-  final int index;
-  final bool isSelected;
-  final Function(int) onSelect;
-  final IconData chatIcon;
-
-  const ChatThumbnail({
-    Key? key,
-    required this.index,
-    required this.isSelected,
-    required this.onSelect,
-    required this.chatIcon,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        onSelect(index);
-      },
-      child: Container(
-        width: 50,
-        height: 50,
-        margin: EdgeInsets.symmetric(vertical: 5),
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: _getColorForIndex(index), // Color based on index
-          border: Border.all(
-            color: isSelected ? Color.fromARGB(255, 255, 255, 255) : Colors.transparent, // Border color when selected
-            width: isSelected ? 2 : 0, // Border width when selected
-          ),
-        ),
-        child: Icon(chatIcon), // Icon for chat thumbnails
-      ),
-    );
-  }
-
-  Color _getColorForIndex(int index) {
-    // List of colors for chat bubbles
-    List<Color> colors = [
-      Colors.blue,
-      Colors.green,
-      Colors.orange,
-      Colors.pink,
-      Colors.purple,
-      Colors.red,
-      Colors.yellow,
-      Colors.teal,
-      Colors.amber,
-      Colors.indigo,
-    ];
-
-    // Use modulo operator to cycle through colors list
-    return colors[index % colors.length];
   }
 }
 
@@ -245,26 +224,23 @@ class _ChatScreenState extends State<ChatScreen> {
   List<String> _messages = [];
   TextEditingController _textController = TextEditingController();
 
+  @override
   void initState() {
     SharedPreferences.getInstance().then((prefs) {
       final senderEmail = prefs.getString('email');
       fetchMessages();
 
-      // Establish socket connection
       socket = IO.io('http://localhost:3000', <String, dynamic>{
         'transports': ['websocket'],
         'autoConnect': false,
       });
       socket.connect();
-      // Emit login event with user's email
       socket.emit('login', senderEmail);
-      // Listen for private messages
       socket.on('private_message', (data) {
         setState(() {
           _messages.add('${data['sender']}: ${data['message']}');
         });
       });
-      // Fetch messages from the server
     });
 
     super.initState();
@@ -272,10 +248,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   void dispose() {
-    // Remove socket event listeners
     socket.off('private_message');
-
-    // Disconnect the socket
     socket.emit('logout');
     socket.disconnect();
 
@@ -286,23 +259,19 @@ class _ChatScreenState extends State<ChatScreen> {
     final prefs = await SharedPreferences.getInstance();
     final senderEmail = prefs.getString('email');
 
-    // Perform HTTP request to fetch messages from the server
     final response = await http.post(
       Uri.parse('http://localhost:3000/getChat'),
       headers: <String, String>{
         'Content-Type': 'application/json; charset=UTF-8',
       },
       body: jsonEncode({
-        'senderId': senderEmail, // Replace with the actual sender email
+        'senderId': senderEmail,
         'receptorId': widget.targetEmail,
       }),
     );
 
     if (response.statusCode == 200) {
-      // If the server returns a 200 OK response, parse the JSON and update the messages list
       final List<dynamic> messages = json.decode(response.body);
-
-      // Sort messages by createdAt date
       messages.sort((a, b) {
         final int timestampA = DateTime.parse(a['createdAt']).millisecondsSinceEpoch;
         final int timestampB = DateTime.parse(b['createdAt']).millisecondsSinceEpoch;
@@ -310,11 +279,10 @@ class _ChatScreenState extends State<ChatScreen> {
       });
 
       setState(() {
-        _messages.clear(); // Clear existing messages
+        _messages.clear();
         _messages.addAll(messages.map((message) => '${message['senderId']}: ${message['content']}'));
       });
     } else {
-      // Handle errors if needed
       print('Failed to fetch messages: ${response.statusCode}');
     }
   }
@@ -324,7 +292,6 @@ class _ChatScreenState extends State<ChatScreen> {
     final senderEmail = prefs.getString('email');
     String message = _textController.text;
     if (message.isNotEmpty) {
-      // Emit private_message event
       socket.emit('private_message', {
         'sender': senderEmail,
         'receptor': widget.targetEmail,
