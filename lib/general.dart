@@ -32,7 +32,6 @@ class _GeneralPageState extends State<GeneralPage> {
 
   Future<void> fetchData() async {
     final response = await http.get(Uri.parse('http://localhost:3000/getUsers'));
-
     if (response.statusCode == 200) {
       setState(() {
         data = json.decode(response.body);
@@ -59,7 +58,6 @@ class _GeneralPageState extends State<GeneralPage> {
       },
       body: jsonEncode({'userId': email}),
     );
-
     if (response.statusCode == 200) {
       setState(() {
         userLobbies = json.decode(response.body);
@@ -73,6 +71,11 @@ class _GeneralPageState extends State<GeneralPage> {
     socket = IO.io('http://localhost:3000', <String, dynamic>{
       'transports': ['websocket'],
       'autoConnect': false,
+    });
+    socket.on('new_lobby', (lobby) {
+      setState(() {
+        userLobbies.add(lobby);
+      });
     });
     socket.connect();
     final prefs = await SharedPreferences.getInstance();
@@ -88,9 +91,7 @@ class _GeneralPageState extends State<GeneralPage> {
     setState(() {
       _selectedChatIndex = index;
     });
-
     final targetEmail = data[index]['email'];
-
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -120,7 +121,55 @@ class _GeneralPageState extends State<GeneralPage> {
               children: [
                 SizedBox(height: 16),
                 GestureDetector(
-                  onTap: () {},
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                          title: Text("Seleccionar acción"),
+                          content: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              ElevatedButton(
+                                onPressed: () {
+                                  Navigator.pop(context); // Cerrar el diálogo
+                                  showDialog(
+                                    context: context,
+                                    builder: (BuildContext context) {
+                                      return CreateLobbyDialog(socket: socket);
+                                    },
+                                  ).then((value) {
+                                    if (value == true) {
+                                      // Si se creó el lobby, actualizar la lista de lobbies del usuario
+                                      fetchUserLobbies(userEmail);
+                                    }
+                                  });
+                                },
+                                child: Text("Crear"),
+                              ),
+                              ElevatedButton(
+                                onPressed: () {
+                                  Navigator.pop(context); // Cerrar el diálogo
+                                  showDialog(
+                                    context: context,
+                                    builder: (BuildContext context) {
+                                      return JoinLobbyDialog(socket: socket);
+                                    },
+                                  ).then((value) {
+                                    if (value == true) {
+                                      // Si se unió al lobby, actualizar la lista de lobbies del usuario
+                                      fetchUserLobbies(userEmail);
+                                    }
+                                  });
+                                },
+                                child: Text("Unirse"),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                  },
                   child: Container(
                     width: 50,
                     height: 50,
@@ -217,11 +266,7 @@ class _GeneralPageState extends State<GeneralPage> {
                   SizedBox(height: _selectedChatIndex == -1 ? 0 : 8),
                   if (_selectedChatIndex == -1)
                     Expanded(
-                      child: _selectedChatIndex == -1
-                          ? Container()
-                          : Center(
-                              child: Container(),
-                            ),
+                      child: _selectedChatIndex == -1 ? Container() : Center(child: Container()),
                     ),
                 ],
               ),
@@ -233,10 +278,130 @@ class _GeneralPageState extends State<GeneralPage> {
   }
 }
 
+class CreateLobbyDialog extends StatefulWidget {
+  final IO.Socket socket;
+  const CreateLobbyDialog({Key? key, required this.socket}) : super(key: key);
+
+  @override
+  _CreateLobbyDialogState createState() => _CreateLobbyDialogState();
+}
+
+class _CreateLobbyDialogState extends State<CreateLobbyDialog> {
+  TextEditingController _lobbyNameController = TextEditingController();
+
+  Future<bool> _createLobby() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userEmail = prefs.getString('email');
+    final response = await http.post(
+      Uri.parse('http://localhost:3000/createLobby'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode({
+        'lobbyName': _lobbyNameController.text,
+        'creatorEmail': userEmail,
+        'memberIds': [userEmail], // Agregar al usuario como miembro del lobby
+      }),
+    );
+    if (response.statusCode == 200) {
+      // Lobby creado exitosamente
+      Navigator.pop(context, true); // Cerrar el diálogo de creación de lobby y notificar que se creó correctamente
+      return true;
+    } else {
+      // Falló la creación del lobby
+      print('Failed to create lobby: ${response.statusCode}');
+      // Podrías mostrar un mensaje de error al usuario aquí
+      return false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text("Crear Lobby"),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _lobbyNameController,
+            decoration: InputDecoration(
+              labelText: 'Nombre del lobby',
+            ),
+          ),
+          SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () => _createLobby().then((value) => Navigator.pop(context, value)),
+            child: Text("Crear Lobby"),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class JoinLobbyDialog extends StatefulWidget {
+  final IO.Socket socket;
+  const JoinLobbyDialog({Key? key, required this.socket}) : super(key: key);
+
+  @override
+  _JoinLobbyDialogState createState() => _JoinLobbyDialogState();
+}
+
+class _JoinLobbyDialogState extends State<JoinLobbyDialog> {
+  TextEditingController _lobbyNameController = TextEditingController();
+
+  Future<bool> _joinLobby() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userEmail = prefs.getString('email');
+    final response = await http.post(
+      Uri.parse('http://localhost:3000/joinLobby'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode({
+        'lobbyName': _lobbyNameController.text,
+        'userEmail': userEmail,
+      }),
+    );
+    if (response.statusCode == 200) {
+      // Usuario unido al lobby exitosamente
+      Navigator.pop(context, true); // Cerrar el diálogo de unirse al lobby y notificar que se unió correctamente
+      return true;
+    } else {
+      // Falló al unirse al lobby
+      print('Failed to join lobby: ${response.statusCode}');
+      // Podrías mostrar un mensaje de error al usuario aquí
+      return false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text("Unirse a Lobby"),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _lobbyNameController,
+            decoration: InputDecoration(
+              labelText: 'Nombre del lobby',
+            ),
+          ),
+          SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () => _joinLobby().then((value) => Navigator.pop(context, value)),
+            child: Text("Unirse al Lobby"),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class ChatScreen extends StatefulWidget {
   final String targetEmail;
   final IO.Socket socket;
-
   const ChatScreen({Key? key, required this.targetEmail, required this.socket}) : super(key: key);
 
   @override
@@ -260,17 +425,14 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   void dispose() {
-    
     widget.socket.off('private_message');
     widget.socket.emit('logout');
-    
     super.dispose();
   }
 
   Future<void> fetchMessages() async {
     final prefs = await SharedPreferences.getInstance();
     final senderEmail = prefs.getString('email');
-
     final response = await http.post(
       Uri.parse('http://localhost:3000/getChat'),
       headers: <String, String>{
@@ -281,7 +443,6 @@ class _ChatScreenState extends State<ChatScreen> {
         'receptorId': widget.targetEmail,
       }),
     );
-
     if (response.statusCode == 200) {
       final List<dynamic> messages = json.decode(response.body);
       messages.sort((a, b) {
@@ -289,7 +450,6 @@ class _ChatScreenState extends State<ChatScreen> {
         final int timestampB = DateTime.parse(b['createdAt']).millisecondsSinceEpoch;
         return timestampA - timestampB;
       });
-
       setState(() {
         _messages.clear();
         _messages.addAll(messages.map((message) => '${message['senderId']}: ${message['content']}'));
@@ -362,7 +522,6 @@ class _ChatScreenState extends State<ChatScreen> {
 class LobbyChatScreen extends StatefulWidget {
   final String lobbyId;
   final IO.Socket socket;
-
   const LobbyChatScreen({Key? key, required this.lobbyId, required this.socket}) : super(key: key);
 
   @override
@@ -417,29 +576,32 @@ class _LobbyChatScreenState extends State<LobbyChatScreen> {
         },
         body: jsonEncode({'lobbyId': lobbyId}),
       );
-
       if (response.statusCode == 200) {
         final List<dynamic> messages = json.decode(response.body);
+        messages.sort((a, b) {
+          final int timestampA = DateTime.parse(a['createdAt']).millisecondsSinceEpoch;
+          final int timestampB = DateTime.parse(b['createdAt']).millisecondsSinceEpoch;
+          return timestampA - timestampB;
+        });
         setState(() {
-          _messages.addAll(messages.map((message) => '${message['senderId']}: ${message['content']}'));
+          _messages.clear();
+          _messages.addAll(messages.map((message) => '${message['sender']}: ${message['message']}'));
         });
       } else {
         print('Failed to fetch lobby messages: ${response.statusCode}');
       }
-    } catch (error) {
-      print('Failed to fetch lobby messages: $error');
+    } catch (e) {
+      print('Error fetching lobby messages: $e');
     }
   }
 
   void _sendMessage() async {
-    final prefs = await SharedPreferences.getInstance();
-    final senderEmail = prefs.getString('email');
     String message = _textController.text;
     if (message.isNotEmpty) {
       widget.socket.emit('lobby_message', {
-        'sender': senderEmail,
-        'message': message,
         'lobbyId': widget.lobbyId,
+        'sender': userEmail,
+        'message': message,
       });
       setState(() {
         _messages.add('Me: $message');
