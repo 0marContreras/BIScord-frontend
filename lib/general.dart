@@ -299,7 +299,6 @@ class _CreateLobbyDialogState extends State<CreateLobbyDialog> {
       },
       body: jsonEncode({
         'lobbyName': _lobbyNameController.text,
-        'creatorEmail': userEmail,
         'memberIds': [userEmail], // Agregar al usuario como miembro del lobby
       }),
     );
@@ -402,6 +401,7 @@ class _JoinLobbyDialogState extends State<JoinLobbyDialog> {
 class ChatScreen extends StatefulWidget {
   final String targetEmail;
   final IO.Socket socket;
+
   const ChatScreen({Key? key, required this.targetEmail, required this.socket}) : super(key: key);
 
   @override
@@ -425,14 +425,17 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   void dispose() {
+    
     widget.socket.off('private_message');
-    widget.socket.emit('logout');
+    //widget.socket.emit('logout');
+    
     super.dispose();
   }
 
   Future<void> fetchMessages() async {
     final prefs = await SharedPreferences.getInstance();
     final senderEmail = prefs.getString('email');
+
     final response = await http.post(
       Uri.parse('http://localhost:3000/getChat'),
       headers: <String, String>{
@@ -443,13 +446,15 @@ class _ChatScreenState extends State<ChatScreen> {
         'receptorId': widget.targetEmail,
       }),
     );
+
     if (response.statusCode == 200) {
       final List<dynamic> messages = json.decode(response.body);
-      messages.sort((a, b) {
-        final int timestampA = DateTime.parse(a['createdAt']).millisecondsSinceEpoch;
-        final int timestampB = DateTime.parse(b['createdAt']).millisecondsSinceEpoch;
-        return timestampA - timestampB;
-      });
+      // messages.sort((a, b) {
+      //   final int timestampA = DateTime.parse(a['createdAt']).millisecondsSinceEpoch;
+      //   final int timestampB = DateTime.parse(b['createdAt']).millisecondsSinceEpoch;
+      //   return timestampA - timestampB;
+      // });
+
       setState(() {
         _messages.clear();
         _messages.addAll(messages.map((message) => '${message['senderId']}: ${message['content']}'));
@@ -518,7 +523,6 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 }
-
 class LobbyChatScreen extends StatefulWidget {
   final String lobbyId;
   final IO.Socket socket;
@@ -567,7 +571,7 @@ class _LobbyChatScreenState extends State<LobbyChatScreen> {
     widget.socket.emit('join_lobby', lobbyId);
   }
 
-  Future<void> fetchLobbyMessages(String lobbyId) async {
+   Future<void> fetchLobbyMessages(String lobbyId) async {
     try {
       final response = await http.post(
         Uri.parse('http://localhost:3000/getLobbyMessages'),
@@ -576,22 +580,17 @@ class _LobbyChatScreenState extends State<LobbyChatScreen> {
         },
         body: jsonEncode({'lobbyId': lobbyId}),
       );
+
       if (response.statusCode == 200) {
         final List<dynamic> messages = json.decode(response.body);
-        messages.sort((a, b) {
-          final int timestampA = DateTime.parse(a['createdAt']).millisecondsSinceEpoch;
-          final int timestampB = DateTime.parse(b['createdAt']).millisecondsSinceEpoch;
-          return timestampA - timestampB;
-        });
         setState(() {
-          _messages.clear();
-          _messages.addAll(messages.map((message) => '${message['sender']}: ${message['message']}'));
+          _messages.addAll(messages.map((message) => '${message['senderId']}: ${message['content']}'));
         });
       } else {
         print('Failed to fetch lobby messages: ${response.statusCode}');
       }
-    } catch (e) {
-      print('Error fetching lobby messages: $e');
+    } catch (error) {
+      print('Failed to fetch lobby messages: $error');
     }
   }
 
