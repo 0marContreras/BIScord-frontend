@@ -104,104 +104,107 @@ class _GeneralPageState extends State<GeneralPage> {
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Color.fromARGB(219, 35, 2, 93),
-      appBar: AppBar(
-        title: Text('General'),
-      ),
-      body: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 80,
-            color: Color.fromARGB(219, 35, 2, 93),
-            child: Column(
-              children: [
-                SizedBox(height: 16),
-                GestureDetector(
-                  onTap: () {
-                    showDialog(
-                      context: context,
-                      builder: (BuildContext context) {
-                        return AlertDialog(
-                          title: Text("Seleccionar acción"),
-                          content: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              ElevatedButton(
-                                onPressed: () {
-                                  Navigator.pop(context); // Cerrar el diálogo
-                                  showDialog(
-                                    context: context,
-                                    builder: (BuildContext context) {
-                                      return CreateLobbyDialog(socket: socket);
-                                    },
-                                  ).then((value) {
-                                    if (value == true) {
-                                      // Si se creó el lobby, actualizar la lista de lobbies del usuario
-                                      fetchUserLobbies(userEmail);
-                                    }
-                                  });
-                                },
-                                child: Text("Crear"),
-                              ),
-                              ElevatedButton(
-                                onPressed: () {
-                                  Navigator.pop(context); // Cerrar el diálogo
-                                  showDialog(
-                                    context: context,
-                                    builder: (BuildContext context) {
-                                      return JoinLobbyDialog(socket: socket);
-                                    },
-                                  ).then((value) {
-                                    if (value == true) {
-                                      // Si se unió al lobby, actualizar la lista de lobbies del usuario
-                                      fetchUserLobbies(userEmail);
-                                    }
-                                  });
-                                },
-                                child: Text("Unirse"),
-                              ),
-                            ],
+ @override
+Widget build(BuildContext context) {
+  return Scaffold(
+    backgroundColor: Color.fromARGB(219, 35, 2, 93),
+    appBar: AppBar(
+      title: Text('General'),
+    ),
+    body: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 80,
+          color: Color.fromARGB(219, 35, 2, 93),
+          child: Column(
+            children: [
+              SizedBox(height: 16),
+              GestureDetector(
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return AlertDialog(
+                        title: Text("Seleccionar acción"),
+                        content: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ElevatedButton(
+                              onPressed: () {
+                                Navigator.pop(context); // Cerrar el diálogo
+                                showDialog(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return CreateLobbyDialog(socket: socket);
+                                  },
+                                ).then((value) {
+                                  if (value == true) {
+                                    // Si se creó el lobby, actualizar la lista de lobbies del usuario
+                                    fetchUserLobbies(userEmail);
+                                  }
+                                });
+                              },
+                              child: Text("Crear"),
+                            ),
+                            ElevatedButton(
+                              onPressed: () {
+                                Navigator.pop(context); // Cerrar el diálogo
+                                showDialog(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return JoinLobbyDialog(socket: socket);
+                                  },
+                                ).then((value) {
+                                  if (value == true) {
+                                    // Si se unió al lobby, actualizar la lista de lobbies del usuario
+                                    fetchUserLobbies(userEmail);
+                                  }
+                                });
+                              },
+                              child: Text("Unirse"),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                },
+                child: Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Color.fromARGB(255, 63, 1, 90),
+                  ),
+                  child: Icon(Icons.add, color: Colors.white),
+                ),
+              ),
+              SizedBox(height: 16),
+              // Display user lobbies as color bubbles
+              Expanded(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: userLobbies.map((lobby) {
+                    return GestureDetector(
+                      onTap: () {
+                        joinLobby(lobby['_id']);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => LobbyChatScreen(lobbyId: lobby['_id'], socket: socket),
                           ),
                         );
                       },
-                    );
-                  },
-                  child: Container(
-                    width: 50,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Color.fromARGB(255, 63, 1, 90),
-                    ),
-                    child: Icon(Icons.add, color: Colors.white),
-                  ),
-                ),
-                SizedBox(height: 16),
-                // Display user lobbies as color bubbles
-                Expanded(
-                  child: Column(
-                    children: userLobbies.map((lobby) {
-                      return GestureDetector(
-                        onTap: () {
-                          joinLobby(lobby['_id']);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => LobbyChatScreen(lobbyId: lobby['_id'], socket: socket),
-                            ),
-                          );
-                        },
+                      child: Tooltip(
+                        message: lobby['lobbyName'], // Mostrar el nombre del lobby como texto flotante
                         child: Container(
                           margin: EdgeInsets.symmetric(vertical: 5),
                           width: 50,
                           height: 50,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: Colors.blue, // Replace with lobby color
+                            color: Color.fromARGB(255, 96, 0, 169), // Replace with lobby color
                           ),
                           child: Center(
                             child: Text(
@@ -214,68 +217,60 @@ class _GeneralPageState extends State<GeneralPage> {
                             ),
                           ),
                         ),
-                      );
-                    }).toList(),
-                  ),
+                      ),
+                    );
+                  }).toList(),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          Expanded(
-            child: Container(
-              color: Color.fromARGB(255, 90, 14, 161),
-              child: Column(
-                children: [
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: data.length,
-                      itemBuilder: (context, index) {
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4.0),
-                          child: TextButton(
-                            onPressed: () {
-                              _selectChat(index);
-                            },
-                            style: ButtonStyle(
-                              backgroundColor: MaterialStateProperty.resolveWith<Color>(
-                                (Set<MaterialState> states) {
-                                  if (states.contains(MaterialState.pressed)) {
-                                    return const Color.fromARGB(255, 255, 255, 255);
-                                  }
-                                  return Color.fromARGB(255, 67, 6, 105);
-                                },
-                              ),
-                              foregroundColor: MaterialStateProperty.all<Color>(Colors.white),
-                              padding: MaterialStateProperty.all<EdgeInsetsGeometry>(EdgeInsets.all(12)),
-                              shape: MaterialStateProperty.all<OutlinedBorder>(
-                                RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)),
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(Icons.account_circle),
-                                SizedBox(width: 8),
-                                Text(data[index]['username']),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
+        ),
+        Expanded(
+          child: Container(
+            color: Color.fromARGB(255, 90, 14, 161),
+            child: ListView.builder(
+              itemCount: data.length,
+              itemBuilder: (context, index) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4.0),
+                  child: TextButton(
+                    onPressed: () {
+                      _selectChat(index);
+                    },
+                    style: ButtonStyle(
+                      backgroundColor: MaterialStateProperty.resolveWith<Color>(
+                        (Set<MaterialState> states) {
+                          if (states.contains(MaterialState.pressed)) {
+                            return const Color.fromARGB(255, 255, 255, 255);
+                          }
+                          return Color.fromARGB(255, 67, 6, 105);
+                        },
+                      ),
+                      foregroundColor: MaterialStateProperty.all<Color>(Colors.white),
+                      padding: MaterialStateProperty.all<EdgeInsetsGeometry>(EdgeInsets.all(12)),
+                      shape: MaterialStateProperty.all<OutlinedBorder>(
+                        RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.account_circle),
+                        SizedBox(width: 8),
+                        Text(data[index]['username']),
+                      ],
                     ),
                   ),
-                  SizedBox(height: _selectedChatIndex == -1 ? 0 : 8),
-                  if (_selectedChatIndex == -1)
-                    Expanded(
-                      child: _selectedChatIndex == -1 ? Container() : Center(child: Container()),
-                    ),
-                ],
-              ),
+                );
+              },
             ),
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
+
+
 }
 
 class CreateLobbyDialog extends StatefulWidget {
@@ -305,6 +300,12 @@ class _CreateLobbyDialogState extends State<CreateLobbyDialog> {
     if (response.statusCode == 200) {
       // Lobby creado exitosamente
       Navigator.pop(context, true); // Cerrar el diálogo de creación de lobby y notificar que se creó correctamente
+      Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => GeneralPage()),
+      (route) => false,
+    );
+
       return true;
     } else {
       // Falló la creación del lobby
