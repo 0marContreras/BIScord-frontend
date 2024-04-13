@@ -21,24 +21,43 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _textController = TextEditingController();
   final List<ChatMessage> _messages = [];
+  final FocusNode _focusNode = FocusNode(); // Define FocusNode
+
+  @override
+  void dispose() {
+    _textController.dispose();
+    _focusNode.dispose(); // Dispose the FocusNode
+    super.dispose();
+  }
 
   void _handleSubmitted(String text) {
-    _textController.clear();
-    setState(() {
-      _messages.insert(0, ChatMessage(
-        text: text,
-      ));
-    });
+    if (text.isNotEmpty) { // Check if the text is not empty
+      _textController.clear();
+      setState(() {
+        _messages.insert(
+          0,
+          ChatMessage(
+            text: text,
+          ),
+        );
+      });
+      _focusNode.requestFocus(); // Keep focus on the text input field
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Chat'),
+        backgroundColor: Color(0xFF422674), // Customizing app bar color
+        title: Text(
+          'Chat',
+          textAlign: TextAlign.center, // Centering the text within the app bar
+        ),
+        centerTitle: true, // Centering the title within the app bar
       ),
       body: Container(
-        color: Color(0xFF2C2F33),
+        color: Color.fromARGB(255, 44, 3, 56),
         child: Column(
           children: <Widget>[
             Flexible(
@@ -49,38 +68,35 @@ class _ChatScreenState extends State<ChatScreen> {
                 itemBuilder: (_, int index) => _messages[index],
               ),
             ),
-            Divider(height: 1.0),
             Container(
+              margin: EdgeInsets.symmetric(horizontal: 8.0),
               decoration: BoxDecoration(
-                color: Theme.of(context).cardColor,
+                color: Color(0xFF230559), // Customizing input container color
+                borderRadius: BorderRadius.circular(20.0), // Adding rounded corners
               ),
-              child: _buildTextComposer(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTextComposer() {
-    return IconTheme(
-      data: IconThemeData(color: Theme.of(context).colorScheme.secondary),
-      child: Container(
-        margin: EdgeInsets.symmetric(horizontal: 8.0),
-        child: Row(
-          children: <Widget>[
-            Flexible(
-              child: TextField(
-                controller: _textController,
-                onSubmitted: _handleSubmitted,
-                decoration: InputDecoration.collapsed(
-                  hintText: 'Send a message',
-                ),
+              child: Row(
+                children: <Widget>[
+                  Flexible(
+                    child: TextField(
+                      focusNode: _focusNode, // Assign the FocusNode
+                      controller: _textController,
+                      onSubmitted: _handleSubmitted,
+                      decoration: InputDecoration(
+                        hintText: 'Send a message',
+                        hintStyle: TextStyle(color: Colors.white), // Customizing hint text color
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 16.0),
+                      ),
+                      style: TextStyle(color: Colors.white), // Customizing text input color
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.send),
+                    onPressed: () => _handleSubmitted(_textController.text),
+                    color: Colors.white, // Customizing icon color
+                  ),
+                ],
               ),
-            ),
-            IconButton(
-              icon: Icon(Icons.send),
-              onPressed: () => _handleSubmitted(_textController.text),
             ),
           ],
         ),
@@ -104,6 +120,7 @@ class ChatMessage extends StatelessWidget {
           Container(
             margin: EdgeInsets.only(right: 16.0),
             child: CircleAvatar(
+              backgroundColor: Color(0xFF5A11A1), // Customizing avatar color
               child: Text('User'), // You can replace this with user avatar
             ),
           ),
@@ -115,11 +132,15 @@ class ChatMessage extends StatelessWidget {
                   'User Name', // You can replace this with user name
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
+                    color: Colors.white, // Customizing user name color
                   ),
                 ),
                 Container(
                   margin: EdgeInsets.only(top: 5.0),
-                  child: Text(text),
+                  child: Text(
+                    text,
+                    style: TextStyle(color: Colors.white), // Customizing message text color
+                  ),
                 ),
               ],
             ),
