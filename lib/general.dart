@@ -32,7 +32,7 @@ class _GeneralPageState extends State<GeneralPage> {
           // Column for the list of chats
           Container(
             width: 200, // Width of the chat list
-            color: Color(0xFF2C2F33), // Background color for chat list
+            color: Color(0xFF422674), // Background color for chat list
             child: ListView.builder(
               itemCount: 10, // Arbitrary number of elements
               itemBuilder: (context, index) {
@@ -47,7 +47,7 @@ class _GeneralPageState extends State<GeneralPage> {
           // Column for the chat content
           Expanded(
             child: Container(
-              color: Color(0xFF2C2F33), // Background color for chat content
+              color: Color(0xFF422674), // Background color for chat content
               child: Center(
                 child: Text('Contenido del Chat'),
               ),
@@ -102,15 +102,18 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       body: Column(
         children: [
           Expanded(
-            child: ListView.builder(
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                return ListTile(
-                  title: Text(_messages[index]),
-                );
-              },
+            child: Center(
+              child: ListView.builder(
+                itemCount: _messages.length,
+                itemBuilder: (context, index) {
+                  return ListTile(
+                    title: Text(_messages[index]),
+                  );
+                },
+              ),
             ),
           ),
+          Divider(), // Adding a divider
           Container(
             padding: EdgeInsets.all(8),
             child: Row(
@@ -168,7 +171,7 @@ class ChatItem extends StatelessWidget {
       },
       child: Container(
         padding: EdgeInsets.all(10),
-        color: isSelected ? Colors.blue[100] : null, // Color when selected
+        color: isSelected ? Color(0xFF230559) : null, // Color when selected
         child: Text(
           'Chat $index',
           style: TextStyle(
